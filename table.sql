@@ -15,7 +15,7 @@ CREATE TABLE statuses (
 
 -- 3. Таблица для клиентов
 CREATE TABLE clients (
-    client_id SERIAL PRIMARY KEY,
+    client_id INTEGER PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20) UNIQUE NOT NULL,
     address TEXT
@@ -23,7 +23,7 @@ CREATE TABLE clients (
 
 -- 4. Таблица для мастеров
 CREATE TABLE masters (
-    master_id SERIAL PRIMARY KEY,
+    master_id INTEGER PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     specialization VARCHAR(255)
 );
@@ -49,6 +49,7 @@ CREATE TABLE requests (
     date_completed TIMESTAMP WITH TIME ZONE,
     
     -- Финансовая информация
+    repair_parts TEXT,
     cost NUMERIC(10, 2) DEFAULT 0.00,
     
     -- Ограничения внешних ключей
@@ -94,3 +95,32 @@ INSERT INTO statuses (status_name) VALUES
 ('Ожидание запчастей'), 
 ('Выполнена'), 
 ('Отменена');
+
+-- 6. Таблица для системных пользователей (для входа в систему)
+CREATE TABLE users (
+    user_id INTEGER PRIMARY KEY,
+    login VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL, -- В реальном приложении нужно хранить хэш
+    role VARCHAR(50) NOT NULL, -- Менеджер, Оператор, Мастер
+    fio VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20)
+);
+
+-- 7. Таблица для комментариев к заявкам
+CREATE TABLE comments (
+    comment_id INTEGER PRIMARY KEY,
+    message TEXT NOT NULL,
+    master_id INTEGER NOT NULL,
+    request_id INTEGER NOT NULL,
+    date_posted TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_comment_master
+        FOREIGN KEY (master_id)
+        REFERENCES masters (master_id)
+        ON DELETE RESTRICT,
+        
+    CONSTRAINT fk_comment_request
+        FOREIGN KEY (request_id)
+        REFERENCES requests (request_id)
+        ON DELETE CASCADE
+);
