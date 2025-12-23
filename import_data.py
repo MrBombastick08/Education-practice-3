@@ -69,6 +69,9 @@ def import_users(db_manager):
     for client in clients_to_import:
         db_manager.execute_query(client_query, client)
     print(f"Импортировано {len(clients_to_import)} клиентов.")
+    
+    # Обновляем последовательности для таблиц с явными ID (если они используют SERIAL)
+    # Примечание: clients, masters, users используют INTEGER PRIMARY KEY, не SERIAL, поэтому последовательности нет
 
     # Импорт мастеров
     master_query = "INSERT INTO masters (master_id, full_name) VALUES (%s, %s) ON CONFLICT (master_id) DO NOTHING;"
@@ -152,7 +155,14 @@ def import_requests(db_manager):
         )
         db_manager.execute_query(request_query, params)
         imported_count += 1
-        
+    
+    # Обновляем последовательность request_id до максимального значения + 1
+    # Это необходимо, чтобы избежать конфликтов при создании новых заявок
+    fix_sequence_query = """
+    SELECT setval('requests_request_id_seq', COALESCE((SELECT MAX(request_id) FROM requests), 0) + 1, false);
+    """
+    db_manager.execute_query(fix_sequence_query)
+    
     print(f"Импортировано {imported_count} заявок.")
 
 def import_comments(db_manager):
@@ -188,7 +198,14 @@ def import_comments(db_manager):
         params = (comment_id, message, master_id, request_id)
         db_manager.execute_query(comment_query, params)
         imported_count += 1
-        
+    
+    # Обновляем последовательность comment_id до максимального значения + 1
+    # (если таблица использует SERIAL, иначе это не нужно)
+    # fix_comment_sequence_query = """
+    # SELECT setval('comments_comment_id_seq', COALESCE((SELECT MAX(comment_id) FROM comments), 0) + 1, false);
+    # """
+    # db_manager.execute_query(fix_comment_sequence_query)
+    
     print(f"Импортировано {imported_count} комментариев.")
 
 def main():

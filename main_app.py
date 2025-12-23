@@ -17,6 +17,17 @@ class RepairTracker:
         """
         params = (client_id, type_id, model, description, serial_number)
         result = self.db.execute_query(query, params, fetch_one=True)
+        
+        # Если возникла ошибка из-за конфликта последовательности, обновляем её и повторяем запрос
+        if not result:
+            # Обновляем последовательность до максимального значения + 1
+            fix_sequence_query = """
+            SELECT setval('requests_request_id_seq', COALESCE((SELECT MAX(request_id) FROM requests), 0) + 1, false);
+            """
+            self.db.execute_query(fix_sequence_query)
+            # Повторяем запрос
+            result = self.db.execute_query(query, params, fetch_one=True)
+        
         if result:
             print(f"Заявка №{result[0]} успешно создана.")
             return result[0]
